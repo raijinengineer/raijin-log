@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>SY Raijin — Engine Room Log</title>
+<style>
+:root {
+  --bg:       #0d1117;
+  --surface:  #161b22;
+  --surface2: #1c2330;
+  --border:   #2a3444;
+  --accent:   #00b4d8;
+  --warn:     #e8a838;
+  --danger:   #e05252;
+  --ok:       #3fb950;
+  --text:     #e6edf3;
+  --muted:    #8b949e;
+  --mono:     'SF Mono','Menlo','Consolas',monospace;
+  --sans:     -apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+
+/* Header */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:8px}
+.header-left{display:flex;align-items:center;gap:8px;min-width:0}
+.vessel-tag{font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--accent);text-transform:uppercase;background:rgba(0,180,216,.1);border:1px solid rgba(0,180,216,.3);border-radius:4px;padding:2px 7px;white-space:nowrap}
+header h1{font-size:15px;font-weight:600;white-space:nowrap}
+.header-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.ts-pill{font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:4px 8px;white-space:nowrap}
+.drive-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:11px;padding:5px 9px;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:border-color .15s,color .15s}
+.drive-btn:hover{border-color:var(--accent);color:var(--accent)}
+.drive-btn.connected{border-color:var(--ok);color:var(--ok)}
+.drive-btn svg{width:13px;height:13px;fill:currentColor}
+
+/* Tabs */
+nav{background:var(--surface);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;flex-shrink:0;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{flex-shrink:0;background:none;border:none;color:var(--muted);font-size:12px;font-weight:500;letter-spacing:.04em;padding:10px 14px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
+nav button.active{color:var(--accent);border-bottom-color:var(--accent)}
+nav button:hover:not(.active){color:var(--text)}
+
+/* Main */
+main{flex:1;overflow-y:auto;padding:14px}
+
+/* Section labels */
+.section-label{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);border-bottom:1px solid var(--border);padding:6px 0;margin:20px 0 10px}
+.section-label:first-child{margin-top:0}
+
+/* Channel rows */
+.channel-row{display:grid;grid-template-columns:1fr 108px 64px;align-items:start;gap:8px;padding:9px 0;border-bottom:1px solid rgba(42,52,68,.5)}
+.channel-label{font-size:13px;color:var(--text);line-height:1.3}
+.channel-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.channel-hint{font-size:10px;margin-top:2px}
+.channel-input{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:14px;padding:8px 9px;width:100%;text-align:right;-webkit-appearance:none;transition:border-color .15s}
+.channel-input:focus{outline:none;border-color:var(--accent)}
+.channel-input::placeholder{color:var(--border)}
+.channel-input.over-warn{border-color:var(--warn)}
+.channel-input.over-max{border-color:var(--danger)}
+.hint-warn{color:var(--warn)}
+.hint-danger{color:var(--danger)}
+.unit-badge{font-size:11px;color:var(--muted);font-family:var(--mono);padding-top:10px;white-space:nowrap}
+
+/* Notes / text rows */
+.notes-row{display:flex;flex-direction:column;gap:6px;padding:9px 0;border-bottom:1px solid rgba(42,52,68,.5)}
+.notes-row textarea,.event-input{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--sans);font-size:13px;padding:8px 10px;resize:vertical;min-height:60px;width:100%;transition:border-color .15s}
+.notes-row textarea:focus,.event-input:focus{outline:none;border-color:var(--accent)}
+
+/* Action bar */
+.action-bar{background:var(--surface);border-top:1px solid var(--border);padding:10px 14px;display:flex;gap:8px;flex-shrink:0}
+.btn{flex:1;padding:12px;border-radius:8px;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s,transform .1s;letter-spacing:.02em}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--accent);color:#000}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-danger{background:transparent;color:var(--danger);border:1px solid var(--danger)}
+.btn-sm{flex:none;padding:7px 12px;font-size:12px;border-radius:6px}
+
+/* Events tab */
+.event-compose{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px}
+.event-compose label{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:6px}
+.event-save-row{display:flex;justify-content:flex-end;margin-top:10px}
+.event-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px}
+.event-card-ts{font-family:var(--mono);font-size:11px;color:var(--accent);margin-bottom:6px}
+.event-card-body{font-size:13px;color:var(--text);line-height:1.55;white-space:pre-wrap;word-break:break-word}
+.event-card-footer{display:flex;justify-content:flex-end;margin-top:8px}
+
+/* History */
+.history-filters{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.filter-group{display:flex;flex-direction:column;gap:4px;flex:1;min-width:120px}
+.filter-group label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.filter-input{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:13px;padding:7px 10px;width:100%}
+.filter-input:focus{outline:none;border-color:var(--accent)}
+.history-entry{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden}
+.history-header{padding:10px 14px;background:var(--surface2);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
+.history-ts{font-family:var(--mono);font-size:12px;color:var(--accent)}
+.history-meta{font-size:11px;color:var(--muted)}
+.history-body{padding:12px 14px;display:none}
+.history-body.open{display:block}
+.history-row{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid rgba(42,52,68,.4);font-size:12px}
+.history-row:last-child{border-bottom:none}
+.history-key{color:var(--muted);flex:1;padding-right:8px}
+.history-val{font-family:var(--mono);color:var(--text);white-space:nowrap}
+.history-actions{display:flex;gap:8px;margin-top:10px}
+.empty-state{color:var(--muted);text-align:center;padding:48px 16px;font-size:14px;line-height:1.6}
+
+/* Drive modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:460px;overflow:hidden}
+.modal-head{padding:13px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-weight:600;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.modal-body{padding:16px}
+.modal-body p{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:12px}
+.modal-body code{font-family:var(--mono);font-size:11px;background:var(--surface2);border:1px solid var(--border);padding:8px 10px;border-radius:6px;display:block;word-break:break-all;margin-bottom:12px;color:var(--text)}
+.modal-foot{padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px}
+.close-btn{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1}
+
+/* Export modal */
+#export-modal .modal-body textarea{width:100%;height:280px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11px;padding:10px;resize:none}
+
+/* Toast */
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ok);color:#000;padding:9px 18px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;white-space:nowrap;z-index:999}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.warn{background:var(--warn)}
+#toast.err{background:var(--danger);color:#fff}
+
+/* Drive status strip */
+.drive-strip{font-size:11px;padding:5px 14px;text-align:center;display:none}
+.drive-strip.ok{display:block;background:rgba(63,185,80,.1);color:var(--ok);border-bottom:1px solid rgba(63,185,80,.2)}
+.drive-strip.fail{display:block;background:rgba(224,82,82,.1);color:var(--danger);border-bottom:1px solid rgba(224,82,82,.2)}
+</style>
+</head>
+<body>
+<div id="app">
+
+<header>
+  <div class="header-left">
+    <span class="vessel-tag">SY Raijin</span>
+    <h1>Engine Room Log</h1>
+  </div>
+  <div class="header-right">
+    <div class="ts-pill" id="live-clock">--:-- UTC</div>
+    <button class="drive-btn" id="drive-btn" onclick="openDriveModal()">
+      <svg viewBox="0 0 24 24"><path d="M6.28 3l-4.5 7.8 4.5 7.8h11.44l4.5-7.8-4.5-7.8zm0 2.24h11.44l3.38 5.56H2.9zM2.9 13.04h18.2l-3.38 5.56H6.28z"/></svg>
+      Drive
+    </button>
+  </div>
+</header>
+
+<div class="drive-strip" id="drive-strip"></div>
+
+<nav id="tab-bar">
+  <button class="active" data-tab="propulsion">Propulsion</button>
+  <button data-tab="gensets">Gensets</button>
+  <button data-tab="fuel">Fuel & Tanks</button>
+  <button data-tab="plumbing">Plumbing</button>
+  <button data-tab="electrical">Electrical</button>
+  <button data-tab="tender">Tender</button>
+  <button data-tab="events">Events</button>
+  <button data-tab="history">History</button>
+</nav>
+
+<main id="main-content"></main>
+
+<div class="action-bar" id="action-bar">
+  <button class="btn btn-secondary" onclick="clearForm()">Clear</button>
+  <button class="btn btn-primary" onclick="saveEntry()">Save Log</button>
+  <button class="btn btn-secondary" onclick="openExport()">Export</button>
+< truncated lines 172-653 >
+  renderTab('propulsion');
+  toast('Entry loaded to form');
+}
+
+function deleteLog(idx){
+  const logs = loadLogs();
+  logs.splice(idx,1);
+  saveLogs(logs);
+  renderHistory(document.getElementById('main-content'));
+  toast('Entry deleted');
+}
+
+// ═══════════════════════════════════════════════════════
+// GOOGLE DRIVE BACKUP
+// ═══════════════════════════════════════════════════════
+function openDriveModal(){
+  document.getElementById('gas-script-display').textContent = GAS_SCRIPT;
+  const saved = localStorage.getItem(STORE_DRIVE)||'';
+  document.getElementById('drive-url-input').value = saved;
+  document.getElementById('drive-modal').classList.add('open');
+}
+function closeDriveModal(){ document.getElementById('drive-modal').classList.remove('open'); }
+
+function saveDriveURL(){
+  const url = document.getElementById('drive-url-input').value.trim();
+  if(url){ localStorage.setItem(STORE_DRIVE,url); toast('Drive URL saved'); }
+  closeDriveModal();
+  updateDriveBtn();
+}
+
+function updateDriveBtn(){
+  const url = localStorage.getItem(STORE_DRIVE);
+  const btn = document.getElementById('drive-btn');
+  btn.classList.toggle('connected', !!url);
+}
+
+async function backupNow(){
+  const url = localStorage.getItem(STORE_DRIVE);
+  if(!url){ toast('Set a Drive URL first','warn'); openDriveModal(); return; }
+  const csv = buildFullCSV();
+  try {
+    showDriveStrip('Backing up…','');
+    const res = await fetch(url, {method:'POST', body:csv, headers:{'Content-Type':'text/plain'}});
+    const txt = await res.text();
+    if(txt.includes('OK')){
+      showDriveStrip('ok','✓ Backed up to Google Drive — '+formatTS(new Date().toISOString()));
+      closeDriveModal();
+      toast('Backup complete');
+    } else {
+      throw new Error(txt);
+    }
+  } catch(err){
+    showDriveStrip('fail','✗ Backup failed — check your Apps Script URL');
+    toast('Backup failed','err');
+    console.error(err);
+  }
+}
+
+function autoDriveBackup(){
+  const url = localStorage.getItem(STORE_DRIVE);
+  if(url) backupNow();
+}
+
+function showDriveStrip(state, msg){
+  const el = document.getElementById('drive-strip');
+  el.className = 'drive-strip';
+  if(state==='ok'||state==='fail'){
+    el.classList.add(state);
+    el.textContent = msg;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPORT / CSV
+// ═══════════════════════════════════════════════════════
+function buildFullCSV(){
+  const logs   = loadLogs();
+  const events = loadEvents();
+
+  // Collect all field IDs
+  const allKeys = new Set();
+  logs.forEach(e=>Object.keys(e.data).forEach(k=>allKeys.add(k)));
+  const keys = [...allKeys];
+
+  const labelMap = {};
+  Object.keys(TABS_DEF).forEach(tid=>{
+    TABS_DEF[tid].sections.forEach(s=>{
+      s.fields.forEach(f=>{ labelMap[f.id]=`${f.label}${f.unit?' ('+f.unit+')':''}`; });
+    });
+  });
+
+  const header = ['Timestamp','Type',...keys.map(k=>q(labelMap[k]||k))].join(',');
+  const rows = [header];
+
+  logs.forEach(e=>{
+    const row=[q(e.ts),q('LOG'),...keys.map(k=>q(e.data[k]?e.data[k].value:''))];
+    rows.push(row.join(','));
+  });
+
+  rows.push('');
+  rows.push('EVENTS LOG');
+  rows.push('Timestamp,Text');
+  events.forEach(e=>rows.push(q(e.ts)+','+q(e.text)));
+
+  return rows.join('\n');
+}
+
+function q(s){ return '"'+(String(s||'').replace(/"/g,'""'))+'"'; }
+
+function openExport(){
+  document.getElementById('export-text').value = buildFullCSV();
+  document.getElementById('export-modal').classList.add('open');
+}
+function closeExport(){ document.getElementById('export-modal').classList.remove('open'); }
+
+function copyExport(){
+  const ta = document.getElementById('export-text');
+  ta.select();
+  navigator.clipboard.writeText(ta.value).then(()=>toast('Copied!')).catch(()=>{
+    document.execCommand('copy'); toast('Copied!');
+  });
+}
+
+function downloadCSV(){
+  const csv = buildFullCSV();
+  const blob = new Blob([csv],{type:'text/csv'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `Raijin_EngineLog_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV downloaded');
+  closeExport();
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════
+function formatTS(iso){
+  const d = new Date(iso);
+  const date = iso.slice(0,10);
+  const time = d.toISOString().slice(11,16);
+  return `${date}  ${time} UTC`;
+}
+
+function escHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let toastTimer;
+function toast(msg, type=''){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show'+(type?' '+type:'');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ el.className=''; }, 2400);
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+document.querySelectorAll('#tab-bar button').forEach(btn=>{
+  btn.addEventListener('click',()=>renderTab(btn.dataset.tab));
+});
+updateDriveBtn();
+renderTab('propulsion');
+</script>
+</body>
+</html>
